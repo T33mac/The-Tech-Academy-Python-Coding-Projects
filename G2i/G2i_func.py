@@ -31,8 +31,6 @@ def ask_quit(self):
         self.master.destroy()
         os._exit(0)  # fully deletes from user's memory so user doesn't experience bugs after running
 
-srcText = ''
-srcText2 = ''
 
 def check_file(self):
     src = filedialog.askdirectory()
@@ -46,31 +44,39 @@ def check_file2(self):
     srcText2.set(f'{src2}')
     return srcText2
 
+
+
 def move_txt(self):
-    conn = sqlite3.connect('txt.db')
     src = self.text_input1.get()
     src2 = self.text_input2.get()
     fList = os.listdir(src)
-    fList2 = os.listdir(src2)
+    create_db(self)
     for fName in (fList):
         if (fName).endswith('.txt'):  # Change file type on this line
             abPath = os.path.join(src, fName)
+            timeStamp = os.path.getmtime(abPath)
+            time = datetime.fromtimestamp(timeStamp).strftime('%Y-%m-%d %H:%M:%S')
+            print(f"{abPath}\n{time}\n")
             shutil.move(f"{abPath}", f"{src2}")
-    for fName2 in (fList2):
-        abPath2 = os.path.join(src2, fName2)
-        timeStamp = os.path.getmtime(abPath2)
-        time = datetime.fromtimestamp(timeStamp).strftime('%Y-%m-%d %H:%M:%S')
-        print(f"{abPath2}\n{time}\n")
-        with conn:  # use connection to create database/table
-            cur = conn.cursor()
-            cur.execute("CREATE TABLE if not exists tbl_txt( \
-                    ID INTEGER PRIMARY KEY AUTOINCREMENT, \
-                    col_fname TEXT, \
-                    col_time TEXT \
-                    );")
-            cur.execute("""INSERT INTO tbl_txt (col_fname,col_time) VALUES (?,?)""", (abPath2, time))
-            conn.commit()  # use connection to commit
+            conn = sqlite3.connect('txt.db')
+            with conn:  # use connection to create database/table
+                cur = conn.cursor()
+                cur.execute("""INSERT INTO tbl_txt (col_fname,col_time) VALUES (?,?)""", (abPath, time))
+                conn.commit()  # use connection to commit
+            conn.close()
+
+def create_db(self):
+    conn = sqlite3.connect('txt.db')
+    with conn:  # use connection to create database/table
+        cur = conn.cursor()
+        cur.execute("CREATE TABLE if not exists tbl_txt( \
+                ID INTEGER PRIMARY KEY AUTOINCREMENT, \
+                col_fname TEXT, \
+                col_time TEXT \
+                );")
+        conn.commit()  # use connection to commit
     conn.close()
+
 
 if __name__ == "__main__":
     pass
